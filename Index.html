@@ -4,6 +4,308 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lottiva</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101426;color:white;
+ font-family:Arial,sans-serif;padding:18px
+}
+header{text-align:center;padding:20px}
+h1{color:#b9a0ff;font-size:34px;margin:5px}
+.card{
+ background:#1c2540;padding:18px;
+ border-radius:15px;margin:15px 0
+}
+textarea{
+ width:100%;height:130px;padding:12px;
+ border-radius:9px;background:#101426;
+ color:white;border:1px solid #66708c;
+ font-size:17px
+}
+button{
+ padding:12px;border:0;border-radius:9px;
+ background:#8565e8;color:white;
+ font-size:15px;font-weight:bold;margin:5px 2px
+}
+.secondary{background:#35415e}
+.line{
+ padding:12px;margin:7px 0;
+ background:#293452;border-radius:9px;
+ display:flex;justify-content:space-between;
+ align-items:center
+}
+.numbers{color:#d5c4ff;font-weight:bold}
+small{color:#aab4ce}
+</style>
+</head>
+<body>
+
+<header>
+<h1>✦ LOTTIVA</h1>
+<p>Korean Lotto 6/45 Analyzer</p>
+<small>Our Number Research Project</small>
+</header>
+
+<div class="card">
+<h3>📥 Add Source Lines</h3>
+<p><small>प्रत्येक लाइनमा 3 वटा नम्बर राख्नुहोस्।</small></p>
+<textarea id="source"
+placeholder="1 3 4&#10;2 5 8&#10;9 15 27"></textarea>
+<button onclick="addLines()">+ Add Lines</button>
+<button class="secondary" onclick="clearInput()">Clear Input</button>
+<p id="message"></p>
+</div>
+
+<div class="card">
+<h3>📊 Source History</h3>
+<h2 id="count">0 Lines</h2>
+<div id="history"></div>
+<button class="secondary" onclick="exportData()">Export Backup</button>
+<button class="secondary" onclick="deleteAll()">Delete All</button>
+</div>
+
+<script>
+let lines=JSON.parse(localStorage.getItem("lottiva_lines")||"[]");
+
+function save(){
+ localStorage.setItem("lottiva_lines",JSON.stringify(lines));
+ render();
+}
+
+function addLines(){
+ let input=document.getElementById("source").value.trim();
+ let rows=input.split(/\n/);
+ let added=0,errors=0;
+
+ rows.forEach(row=>{
+  if(!row.trim())return;
+  let nums=row.match(/\d+/g);
+  if(!nums||nums.length!==3){
+   errors++;return;
+  }
+  nums=nums.map(Number);
+  if(nums.some(n=>n<1||n>45)||new Set(nums).size!==3){
+   errors++;return;
+  }
+  lines.push(nums);
+  added++;
+ });
+
+ save();
+ document.getElementById("source").value="";
+ document.getElementById("message").innerText=
+ added+" Lines Added | "+errors+" Invalid Lines";
+}
+
+function render(){
+ document.getElementById("count").innerText=
+ lines.length+" Lines";
+
+ let html="";
+ lines.forEach((nums,i)=>{
+  html+=`<div class="line">
+  <span>L${i+1}</span>
+  <span class="numbers">${nums.join(" - ")}</span>
+  <button class="secondary" onclick="removeLine(${i})">×</button>
+  </div>`;
+ });
+ document.getElementById("history").innerHTML=
+ html||"<small>No Source Lines Yet</small>";
+}
+
+function removeLine(i){
+ if(confirm("Delete this line?")){
+  lines.splice(i,1);
+  save();
+ }
+}
+
+function clearInput(){
+ document.getElementById("source").value="";
+}
+
+function deleteAll(){
+ if(confirm("Delete ALL Source Lines?")){
+  lines=[];
+  save();
+ }
+}
+
+function exportData(){
+ let data=lines.map(x=>x.join(" - ")).join("\n");
+ let blob=new Blob([data],{type:"text/plain"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="Lottiva_Backup.txt";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+render();
+</script>
+</body>
+</html>
+
+
+On Sun, 15 Nov 2026, 8:30 pm Shyamkumar Bk, <bkshyamkumar7@gmail.com> wrote:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lottiva</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101426;color:white;
+ font-family:Arial,sans-serif;padding:18px
+}
+header{text-align:center;padding:20px}
+h1{color:#b9a0ff;font-size:34px;margin:5px}
+.card{
+ background:#1c2540;padding:18px;
+ border-radius:15px;margin:15px 0
+}
+textarea{
+ width:100%;height:130px;padding:12px;
+ border-radius:9px;background:#101426;
+ color:white;border:1px solid #66708c;
+ font-size:17px
+}
+button{
+ padding:12px;border:0;border-radius:9px;
+ background:#8565e8;color:white;
+ font-size:15px;font-weight:bold;margin:5px 2px
+}
+.secondary{background:#35415e}
+.line{
+ padding:12px;margin:7px 0;
+ background:#293452;border-radius:9px;
+ display:flex;justify-content:space-between;
+ align-items:center
+}
+.numbers{color:#d5c4ff;font-weight:bold}
+small{color:#aab4ce}
+</style>
+</head>
+<body>
+
+<header>
+<h1>✦ LOTTIVA</h1>
+<p>Korean Lotto 6/45 Analyzer</p>
+<small>Our Number Research Project</small>
+</header>
+
+<div class="card">
+<h3>📥 Add Source Lines</h3>
+<p><small>प्रत्येक लाइनमा 3 वटा नम्बर राख्नुहोस्।</small></p>
+<textarea id="source"
+placeholder="1 3 4&#10;2 5 8&#10;9 15 27"></textarea>
+<button onclick="addLines()">+ Add Lines</button>
+<button class="secondary" onclick="clearInput()">Clear Input</button>
+<p id="message"></p>
+</div>
+
+<div class="card">
+<h3>📊 Source History</h3>
+<h2 id="count">0 Lines</h2>
+<div id="history"></div>
+<button class="secondary" onclick="exportData()">Export Backup</button>
+<button class="secondary" onclick="deleteAll()">Delete All</button>
+</div>
+
+<script>
+let lines=JSON.parse(localStorage.getItem("lottiva_lines")||"[]");
+
+function save(){
+ localStorage.setItem("lottiva_lines",JSON.stringify(lines));
+ render();
+}
+
+function addLines(){
+ let input=document.getElementById("source").value.trim();
+ let rows=input.split(/\n/);
+ let added=0,errors=0;
+
+ rows.forEach(row=>{
+  if(!row.trim())return;
+  let nums=row.match(/\d+/g);
+  if(!nums||nums.length!==3){
+   errors++;return;
+  }
+  nums=nums.map(Number);
+  if(nums.some(n=>n<1||n>45)||new Set(nums).size!==3){
+   errors++;return;
+  }
+  lines.push(nums);
+  added++;
+ });
+
+ save();
+ document.getElementById("source").value="";
+ document.getElementById("message").innerText=
+ added+" Lines Added | "+errors+" Invalid Lines";
+}
+
+function render(){
+ document.getElementById("count").innerText=
+ lines.length+" Lines";
+
+ let html="";
+ lines.forEach((nums,i)=>{
+  html+=`<div class="line">
+  <span>L${i+1}</span>
+  <span class="numbers">${nums.join(" - ")}</span>
+  <button class="secondary" onclick="removeLine(${i})">×</button>
+  </div>`;
+ });
+ document.getElementById("history").innerHTML=
+ html||"<small>No Source Lines Yet</small>";
+}
+
+function removeLine(i){
+ if(confirm("Delete this line?")){
+  lines.splice(i,1);
+  save();
+ }
+}
+
+function clearInput(){
+ document.getElementById("source").value="";
+}
+
+function deleteAll(){
+ if(confirm("Delete ALL Source Lines?")){
+  lines=[];
+  save();
+ }
+}
+
+function exportData(){
+ let data=lines.map(x=>x.join(" - ")).join("\n");
+ let blob=new Blob([data],{type:"text/plain"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="Lottiva_Backup.txt";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+render();
+</script>
+</body>
+</html>
+
+
+On Sat, 14 Nov 2026, 11:25 pm Shyamkumar Bk, <bkshyamkumar7@gmail.com> wrote:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lottiva</title>
 <style>
@@ -72,7 +374,6 @@ Get Started
 </body>
 </html>
 
-Hide quoted text
 
 On Sat, 14 Nov 2026, 11:25 pm Sunita Bk, <bksunita5678@gmail.com> wrote:
 👋 
