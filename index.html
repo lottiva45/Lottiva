@@ -904,11 +904,1042 @@ button {
 <span class="ball">42</span>
 </div>
 <p>Your Smart Lotto Analyzer</p>
+ <button onclick="alert('Lottiva is starting!')">
+Get Started
+</button>
+</div>
+</p>Offline • Smart Analysis • Source Evidence</p>
+
+
+<section id="lottiva42" style="padding:16px;margin:16px 0;border:1px solid #888;border-radius:12px">
+  <h2>LOTTIVA – 2 Line 4+2</h2>
+  <p>Source History (प्रत्येक लाइनमा ३ नम्बर राख्नुहोस्)</p>
+  <textarea id="l42history" rows="8" style="width:100%;padding:10px" placeholder="L17: 1 3 4&#10;L20: 2 3 4&#10;L25: 1 3 5&#10;L31: 1 4 5&#10;L42: 2 3 6"></textarea>
+  <button onclick="l42find()" style="padding:10px;margin-top:10px">Find 4+2</button>
+  <div id="l42result" style="margin-top:15px"></div>
+</section>
+
+<script>
+function l42find() {
+  const raw = document.getElementById("l42history").value.trim();
+  const out = document.getElementById("l42result");
+  const lines = [];
+
+  raw.split(/\n/).forEach((s, i) => {
+    const nums = (s.match(/\d+/g) || []).map(Number);
+    if (nums.length !== 4 || nums.some(n => n < 1 || n > 45) ||
+        new Set(nums.slice(1)).size !== 3) {
+      return;
+    }
+    lines.push({
+      name: nums.length ? (s.match(/L\d+/i)?.[0] || "L"+(i+1)) : "L"+(i+1),
+      nums: nums.slice(-3)
+    });
+  });
+
+  if (lines.length < 2) {
+    out.innerHTML = "कम्तीमा २ वटा सही Source Line राख्नुहोस्।";
+    return;
+  }
+
+  const results = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    for (let j = i+1; j < lines.length; j++) {
+      const a = lines[i], b = lines[j];
+      const common = a.nums.filter(n => b.nums.includes(n));
+      if (common.length !== 2) continue;
+
+      const base = [...new Set([...a.nums, ...b.nums])].sort((x,y)=>x-y);
+      if (base.length !== 4) continue;
+
+      const evidence = {};
+
+      lines.forEach(line => {
+        line.nums.forEach(candidate => {
+          if (base.includes(candidate)) return;
+          const matched = base.filter(n => line.nums.includes(n));
+          if (!matched.length) return;
+
+          if (!evidence[candidate]) evidence[candidate] = {};
+          matched.forEach(n => {
+            const key = n + "-" + candidate;
+            if (!evidence[candidate][key]) {
+              evidence[candidate][key] = [];
+            }
+            evidence[candidate][key].push(line.name);
+          });
+        });
+      });
+
+      const ranked = Object.entries(evidence).map(([num,pairs]) => ({
+        num: Number(num),
+        pairs,
+        count: Object.values(pairs).reduce((s,v)=>s+v.length,0)
+      })).sort((a,b)=>b.count-a.count || a.num-b.num);
+
+      if (ranked.length < 2) continue;
+
+      results.push({
+        a,b,common,base,ranked,
+        top: ranked.slice(0,2)
+      });
+    }
+  }
+
+  if (!results.length) {
+    out.innerHTML = "२ वटा साझा नम्बर भएका 4-Number Base भेटिएनन्।";
+    return;
+  }
+
+  results.forEach(r => {
+    r.score = r.top.reduce((s,x)=>s+x.count,0);
+  });
+  results.sort((a,b)=>b.score-a.score);
+
+  out.innerHTML = results.map(r => {
+    const proof = r.top.map(x => {
+      const detail = Object.entries(x.pairs).map(([pair,src]) =>
+        `<li>Pair ${pair}: ${src.join(", ")}</li>`
+      ).join("");
+      return `<p><b>नम्बर ${x.num}</b> – ${x.count} Pair प्रमाण
+        <ul>${detail}</ul></p>`;
+    }).join("");
+
+    return `
+      <hr>
+      <h3>Source: ${r.a.name} + ${r.b.name}</h3>
+      साझा नम्बर: ${r.common.join(", ")}<br>
+      Base 4: <b>${r.base.join(" – ")}</b>
+      <h4>5th र 6th नम्बर</h4>
+      <h3>${r.base.concat(r.top.map(x=>x.num)).sort((a,b)=>a-b).join(" – ")}</h3>
+      ${proof}
+    `;
+  }).join("");
+}
+</script>
+
+
+On Sun, 15 Nov 2026, 9:21 pm Shyamkumar Bk, <bkshyamkumar7@gmail.com> wrote:
+
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lottiva</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101426;color:white;font-family:Arial;padding:16px}
+header{text-align:center;padding:15px}
+h1{color:#b9a0ff;font-size:34px}
+.card{background:#1c2540;padding:16px;border-radius:14px;margin:14px 0}
+textarea{width:100%;height:110px;padding:12px;border-radius:9px;background:#101426;color:white;border:1px solid #66708c;font-size:17px}
+button{padding:11px;border:0;border-radius:8px;background:#8565e8;color:white;font-weight:bold;margin:4px 2px}
+.secondary{background:#35415e}
+.line,.result{padding:12px;margin:8px 0;background:#293452;border-radius:9px}
+.line{display:flex;justify-content:space-between;align-items:center;gap:5px}
+.numbers{color:#d5c4ff;font-weight:bold}
+small{color:#aab4ce}
+.pairbtn{background:#35415e;margin:3px}
+.pairbtn.selected{background:#8565e8;border:2px solid white}
+</style>
+</head>
+<body>
+
+<header>
+<h1>✦ LOTTIVA</h1>
+<p>Korean Lotto 6/45 Analyzer</p>
+<small>Version 1.1 | Pair & Triple Engine</small>
+</header>
+
+<div class="card">
+<h3>📥 Add Source Lines</h3>
+<p><small>हरेक लाइनमा 3 वटा फरक नम्बर राख्नुहोस्।</small></p>
+<textarea id="source" placeholder="1 3 4&#10;2 3 4&#10;5 8 12"></textarea>
+<button onclick="addLines()">+ Add Lines</button>
+<button class="secondary" onclick="clearInput()">Clear</button>
+<p id="message"></p>
+</div>
+
+<div class="card">
+<h3>📊 Source History</h3>
+<h2 id="count">0 Lines</h2>
+<div id="history"></div>
+<button class="secondary" onclick="exportData()">Export Backup</button>
+<button class="secondary" onclick="deleteAll()">Delete All</button>
+</div>
+
+<div class="card">
+<h3>🔗 Pair Analysis</h3>
+<p><small>हरेक Source Line बाट एउटा मात्र जोडी छान्नुहोस्।</small></p>
+<div id="pairChoices"></div>
+<button onclick="showPairs()">Show Selected Pairs</button>
+<div id="pairs"></div>
+</div>
+
+<div class="card">
+<h3>🔺 Triple Analysis</h3>
+<p><small>तीन नम्बरका समूह र तिनको Source Line प्रमाण।</small></p>
+<button onclick="analyzeTriples()">Analyze Triples</button>
+<div id="triples"></div>
+</div>
+
+<script>
+let lines=JSON.parse(localStorage.getItem("lottiva_lines")||"[]");
+let selected={};
+
+function save(){
+ localStorage.setItem("lottiva_lines",JSON.stringify(lines));
+ render();
+}
+
+function addLines(){
+ let rows=document.getElementById("source").value.trim().split(/\n/);
+ let added=0,errors=0;
+ rows.forEach(row=>{
+  if(!row.trim())return;
+  let nums=row.match(/\d+/g);
+  if(!nums||nums.length!==3){errors++;return;}
+  nums=nums.map(Number);
+  if(nums.some(n=>n<1||n>45)||new Set(nums).size!==3){errors++;return;}
+  lines.push(nums);
+  added++;
+ });
+ save();
+ document.getElementById("source").value="";
+ document.getElementById("message").innerText=added+" Added | "+errors+" Invalid";
+}
+
+function render(){
+ document.getElementById("count").innerText=lines.length+" Lines";
+ document.getElementById("history").innerHTML=lines.map((n,i)=>
+ `<div class="line"><span>L${i+1}</span><span class="numbers">${n.join(" - ")}</span><button class="secondary" onclick="removeLine(${i})">×</button></div>`
+ ).join("")||"<small>No Source Lines Yet</small>";
+ renderPairChoices();
+}
+
+function clearInput(){
+ document.getElementById("source").value="";
+}
+
+function removeLine(i){
+ if(confirm("Delete this line?")){
+  lines.splice(i,1);
+  selected={};
+  save();
+  document.getElementById("pairs").innerHTML="";
+  document.getElementById("triples").innerHTML="";
+ }
+}
+
+function deleteAll(){
+ if(confirm("Delete ALL Source Lines?")){
+  lines=[];
+  selected={};
+  save();
+  document.getElementById("pairs").innerHTML="";
+  document.getElementById("triples").innerHTML="";
+ }
+}
+
+function exportData(){
+ let blob=new Blob([lines.map(x=>x.join(" - ")).join("\n")],{type:"text/plain"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="Lottiva_Backup.txt";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+function renderPairChoices(){
+ let html="";
+ lines.forEach((nums,i)=>{
+  let n=[...nums].sort((a,b)=>a-b);
+  let options=[[n[0],n[1]],[n[0],n[2]],[n[1],n[2]]];
+  html+=`<div class="result"><b>L${i+1}: ${n.join(" - ")}</b><br>`;
+  options.forEach(p=>{
+   let key=p.join("-");
+   let active=selected[i]===key?"selected":"";
+   html+=`<button class="pairbtn ${active}" onclick="choosePair(${i},'${key}')">${p.join(" - ")}</button>`;
+  });
+  html+="</div>";
+ });
+ document.getElementById("pairChoices").innerHTML=html||"No Source Lines";
+}
+
+function choosePair(i,key){
+ selected[i]=key;
+ renderPairChoices();
+}
+
+function showPairs(){
+ let map={};
+ Object.keys(selected).forEach(i=>{
+  let key=selected[i];
+  if(!map[key])map[key]=[];
+  map[key].push(Number(i)+1);
+ });
+ let entries=Object.entries(map).sort((a,b)=>b[1].length-a[1].length);
+ document.getElementById("pairs").innerHTML=entries.map(([pair,src])=>
+ `<div class="result"><b>${pair.replace("-"," - ")}</b><br>
+ <small>Source: ${src.map(x=>"L"+x).join(", ")} | Selected ${src.length} time(s)</small></div>`
+ ).join("")||"<small>अहिलेसम्म कुनै Pair छानिएको छैन।</small>";
+}
+
+function analyzeTriples(){
+ let map={};
+ lines.forEach((nums,i)=>{
+  let key=[...nums].sort((a,b)=>a-b).join("-");
+  if(!map[key])map[key]=[];
+  map[key].push(i+1);
+ });
+ let entries=Object.entries(map).sort((a,b)=>b[1].length-a[1].length);
+ document.getElementById("triples").innerHTML=entries.map(([triple,src])=>
+ `<div class="result"><b>${triple.replaceAll("-"," - ")}</b><br>
+ <small>Source: ${src.map(x=>"L"+x).join(", ")} | Occurrences: ${src.length}</small></div>`
+ ).join("")||"No Triples";
+}
+
+render();
+</script>
+</body>
+</html>
+
+
+On Sun, 15 Nov 2026, 9:19 pm Shyamkumar Bk, <bkshyamkumar7@gmail.com> wrote:
+
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lottiva</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101426;color:white;font-family:Arial;padding:16px}
+header{text-align:center;padding:15px}
+h1{color:#b9a0ff;font-size:34px}
+.card{background:#1c2540;padding:16px;border-radius:14px;margin:14px 0}
+textarea{width:100%;height:110px;padding:12px;border-radius:9px;background:#101426;color:white;border:1px solid #66708c;font-size:17px}
+button{padding:11px;border:0;border-radius:8px;background:#8565e8;color:white;font-weight:bold;margin:4px 2px}
+.secondary{background:#35415e}
+.line,.result{padding:12px;margin:8px 0;background:#293452;border-radius:9px}
+.line{display:flex;justify-content:space-between;align-items:center;gap:5px}
+.numbers{color:#d5c4ff;font-weight:bold}
+small{color:#aab4ce}
+.pairbtn{background:#35415e;margin:3px}
+.pairbtn.selected{background:#8565e8;border:2px solid white}
+</style>
+</head>
+<body>
+
+<header>
+<h1>✦ LOTTIVA</h1>
+<p>Korean Lotto 6/45 Analyzer</p>
+<small>Version 1.1 | Pair & Triple Engine</small>
+</header>
+
+<div class="card">
+<h3>📥 Add Source Lines</h3>
+<p><small>हरेक लाइनमा 3 वटा फरक नम्बर राख्नुहोस्।</small></p>
+<textarea id="source" placeholder="1 3 4&#10;2 3 4&#10;5 8 12"></textarea>
+<button onclick="addLines()">+ Add Lines</button>
+<button class="secondary" onclick="clearInput()">Clear</button>
+<p id="message"></p>
+</div>
+
+<div class="card">
+<h3>📊 Source History</h3>
+<h2 id="count">0 Lines</h2>
+<div id="history"></div>
+<button class="secondary" onclick="exportData()">Export Backup</button>
+<button class="secondary" onclick="deleteAll()">Delete All</button>
+</div>
+
+<div class="card">
+<h3>🔗 Pair Analysis</h3>
+<p><small>हरेक Source Line बाट एउटा मात्र जोडी छान्नुहोस्।</small></p>
+<div id="pairChoices"></div>
+<button onclick="showPairs()">Show Selected Pairs</button>
+<div id="pairs"></div>
+</div>
+
+<div class="card">
+<h3>🔺 Triple Analysis</h3>
+<p><small>तीन नम्बरका समूह र तिनको Source Line प्रमाण।</small></p>
+<button onclick="analyzeTriples()">Analyze Triples</button>
+<div id="triples"></div>
+</div>
+
+<script>
+let lines=JSON.parse(localStorage.getItem("lottiva_lines")||"[]");
+let selected={};
+
+function save(){
+ localStorage.setItem("lottiva_lines",JSON.stringify(lines));
+ render();
+}
+
+function addLines(){
+ let rows=document.getElementById("source").value.trim().split(/\n/);
+ let added=0,errors=0;
+ rows.forEach(row=>{
+  if(!row.trim())return;
+  let nums=row.match(/\d+/g);
+  if(!nums||nums.length!==3){errors++;return;}
+  nums=nums.map(Number);
+  if(nums.some(n=>n<1||n>45)||new Set(nums).size!==3){errors++;return;}
+  lines.push(nums);
+  added++;
+ });
+ save();
+ document.getElementById("source").value="";
+ document.getElementById("message").innerText=added+" Added | "+errors+" Invalid";
+}
+
+function render(){
+ document.getElementById("count").innerText=lines.length+" Lines";
+ document.getElementById("history").innerHTML=lines.map((n,i)=>
+ `<div class="line"><span>L${i+1}</span><span class="numbers">${n.join(" - ")}</span><button class="secondary" onclick="removeLine(${i})">×</button></div>`
+ ).join("")||"<small>No Source Lines Yet</small>";
+ renderPairChoices();
+}
+
+function clearInput(){
+ document.getElementById("source").value="";
+}
+
+function removeLine(i){
+ if(confirm("Delete this line?")){
+  lines.splice(i,1);
+  selected={};
+  save();
+  document.getElementById("pairs").innerHTML="";
+  document.getElementById("triples").innerHTML="";
+ }
+}
+
+function deleteAll(){
+ if(confirm("Delete ALL Source Lines?")){
+  lines=[];
+  selected={};
+  save();
+  document.getElementById("pairs").innerHTML="";
+  document.getElementById("triples").innerHTML="";
+ }
+}
+
+function exportData(){
+ let blob=new Blob([lines.map(x=>x.join(" - ")).join("\n")],{type:"text/plain"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="Lottiva_Backup.txt";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+function renderPairChoices(){
+ let html="";
+ lines.forEach((nums,i)=>{
+  let n=[...nums].sort((a,b)=>a-b);
+  let options=[[n[0],n[1]],[n[0],n[2]],[n[1],n[2]]];
+  html+=`<div class="result"><b>L${i+1}: ${n.join(" - ")}</b><br>`;
+  options.forEach(p=>{
+   let key=p.join("-");
+   let active=selected[i]===key?"selected":"";
+   html+=`<button class="pairbtn ${active}" onclick="choosePair(${i},'${key}')">${p.join(" - ")}</button>`;
+  });
+  html+="</div>";
+ });
+ document.getElementById("pairChoices").innerHTML=html||"No Source Lines";
+}
+
+function choosePair(i,key){
+ selected[i]=key;
+ renderPairChoices();
+}
+
+function showPairs(){
+ let map={};
+ Object.keys(selected).forEach(i=>{
+  let key=selected[i];
+  if(!map[key])map[key]=[];
+  map[key].push(Number(i)+1);
+ });
+ let entries=Object.entries(map).sort((a,b)=>b[1].length-a[1].length);
+ document.getElementById("pairs").innerHTML=entries.map(([pair,src])=>
+ `<div class="result"><b>${pair.replace("-"," - ")}</b><br>
+ <small>Source: ${src.map(x=>"L"+x).join(", ")} | Selected ${src.length} time(s)</small></div>`
+ ).join("")||"<small>अहिलेसम्म कुनै Pair छानिएको छैन।</small>";
+}
+
+function analyzeTriples(){
+ let map={};
+ lines.forEach((nums,i)=>{
+  let key=[...nums].sort((a,b)=>a-b).join("-");
+  if(!map[key])map[key]=[];
+  map[key].push(i+1);
+ });
+ let entries=Object.entries(map).sort((a,b)=>b[1].length-a[1].length);
+ document.getElementById("triples").innerHTML=entries.map(([triple,src])=>
+ `<div class="result"><b>${triple.replaceAll("-"," - ")}</b><br>
+ <small>Source: ${src.map(x=>"L"+x).join(", ")} | Occurrences: ${src.length}</small></div>`
+ ).join("")||"No Triples";
+}
+
+render();
+</script>
+</body>
+</html>
+
+
+On Sun, 15 Nov 2026, 9:05 pm Shyamkumar Bk, <bkshyamkumar7@gmail.com> wrote:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lottiva</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101426;color:white;font-family:Arial;padding:16px}
+header{text-align:center;padding:15px}
+h1{color:#b9a0ff;font-size:34px}
+.card{background:#1c2540;padding:16px;border-radius:14px;margin:14px 0}
+textarea{width:100%;height:110px;padding:12px;border-radius:9px;background:#101426;color:white;border:1px solid #66708c;font-size:17px}
+button{padding:11px;border:0;border-radius:8px;background:#8565e8;color:white;font-weight:bold;margin:4px 2px}
+.secondary{background:#35415e}
+.line{padding:11px;margin:7px 0;background:#293452;border-radius:8px;display:flex;justify-content:space-between;gap:8px}
+.numbers{color:#d5c4ff;font-weight:bold}
+small{color:#aab4ce}
+.result{padding:12px;background:#293452;border-radius:9px;margin:8px 0}
+h3{color:#d5c4ff}
+</style>
+</head>
+<body>
+
+<header>
+<h1>✦ LOTTIVA</h1>
+<p>Korean Lotto 6/45 Analyzer</p>
+<small>Version 1.1 | Pair & Triple Engine</small>
+</header>
+
+<div class="card">
+<h3>📥 Add Source Lines</h3>
+<p><small>प्रत्येक लाइनमा 3 वटा नम्बर राख्नुहोस्।</small></p>
+<textarea id="source" placeholder="1 3 4&#10;2 3 4&#10;5 8 12"></textarea>
+<button onclick="addLines()">+ Add Lines</button>
+<button class="secondary" onclick="clearInput()">Clear</button>
+<p id="message"></p>
+</div>
+
+<div class="card">
+<h3>📊 Source History</h3>
+<h2 id="count">0 Lines</h2>
+<div id="history"></div>
+<button class="secondary" onclick="exportData()">Export Backup</button>
+<button class="secondary" onclick="deleteAll()">Delete All</button>
+</div>
+
+<div class="card">
+<h3>🔗 Pair Analysis</h3>
+<p><small>Source Lines मा भेटिएका सबै जोडी र तिनको प्रमाण</small></p>
+<button onclick="analyzePairs()">Analyze Pairs</button>
+<div id="pairs"></div>
+</div>
+
+<div class="card">
+<h3>🔺 Triple Analysis</h3>
+<p><small>तीन नम्बरको समूह र Source Line प्रमाण</small></p>
+<button onclick="analyzeTriples()">Analyze Triples</button>
+<div id="triples"></div>
+</div>
+
+<script>
+let lines=JSON.parse(localStorage.getItem("lottiva_lines")||"[]");
+
+function save(){
+ localStorage.setItem("lottiva_lines",JSON.stringify(lines));
+ render();
+}
+
+function addLines(){
+ let rows=document.getElementById("source").value.trim().split(/\n/);
+ let added=0,errors=0;
+ rows.forEach(row=>{
+  if(!row.trim())return;
+  let nums=row.match(/\d+/g);
+  if(!nums||nums.length!==3){errors++;return;}
+  nums=nums.map(Number);
+  if(nums.some(n=>n<1||n>45)||new Set(nums).size!==3){errors++;return;}
+  lines.push(nums);
+  added++;
+ });
+ save();
+ document.getElementById("source").value="";
+ document.getElementById("message").innerText=
+ added+" Added | "+errors+" Invalid";
+}
+
+function render(){
+ document.getElementById("count").innerText=lines.length+" Lines";
+ document.getElementById("history").innerHTML=lines.map((n,i)=>
+ `<div class="line"><span>L${i+1}</span><span class="numbers">${n.join(" - ")}</span><button class="secondary" onclick="removeLine(${i})">×</button></div>`
+ ).join("")||"<small>No Source Lines Yet</small>";
+}
+
+function clearInput(){
+ document.getElementById("source").value="";
+}
+
+function removeLine(i){
+ if(confirm("Delete this line?")){
+  lines.splice(i,1);
+  save();
+ }
+}
+
+function deleteAll(){
+ if(confirm("Delete ALL Source Lines?")){
+  lines=[];
+  save();
+  document.getElementById("pairs").innerHTML="";
+  document.getElementById("triples").innerHTML="";
+ }
+}
+
+function exportData(){
+ let blob=new Blob([lines.map(x=>x.join(" - ")).join("\n")],{type:"text/plain"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="Lottiva_Backup.txt";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+function analyzePairs(){
+ let map={};
+ lines.forEach((nums,i)=>{
+  let sorted=[...nums].sort((a,b)=>a-b);
+  for(let a=0;a<3;a++){
+   for(let b=a+1;b<3;b++){
+    let key=sorted[a]+"-"+sorted[b];
+    if(!map[key])map[key]=[];
+    map[key].push(i+1);
+   }
+  }
+ });
+ let entries=Object.entries(map).sort((a,b)=>b[1].length-a[1].length);
+ document.getElementById("pairs").innerHTML=entries.map(([pair,src])=>
+ `<div class="result"><b>${pair.replace("-"," - ")}</b><br>
+ <small>Count: ${src.length} | Source: ${src.map(x=>"L"+x).join(", ")}</small></div>`
+ ).join("")||"No Pairs";
+}
+
+function analyzeTriples(){
+ let map={};
+ lines.forEach((nums,i)=>{
+  let key=[...nums].sort((a,b)=>a-b).join("-");
+  if(!map[key])map[key]=[];
+  map[key].push(i+1);
+ });
+ let entries=Object.entries(map).sort((a,b)=>b[1].length-a[1].length);
+ document.getElementById("triples").innerHTML=entries.map(([triple,src])=>
+ `<div class="result"><b>${triple.replaceAll("-"," - ")}</b><br>
+ <small>Count: ${src.length} | Source: ${src.map(x=>"L"+x).join(", ")}</small></div>`
+ ).join("")||"No Triples";
+}
+
+render();
+</script>
+</body>
+</html>
+
+
+On Sun, 15 Nov 2026, 8:32 pm Shyamkumar Bk, <bkshyamkumar7@gmail.com> wrote:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lottiva</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101426;color:white;
+ font-family:Arial,sans-serif;padding:18px
+}
+header{text-align:center;padding:20px}
+h1{color:#b9a0ff;font-size:34px;margin:5px}
+.card{
+ background:#1c2540;padding:18px;
+ border-radius:15px;margin:15px 0
+}
+textarea{
+ width:100%;height:130px;padding:12px;
+ border-radius:9px;background:#101426;
+ color:white;border:1px solid #66708c;
+ font-size:17px
+}
+button{
+ padding:12px;border:0;border-radius:9px;
+ background:#8565e8;color:white;
+ font-size:15px;font-weight:bold;margin:5px 2px
+}
+.secondary{background:#35415e}
+.line{
+ padding:12px;margin:7px 0;
+ background:#293452;border-radius:9px;
+ display:flex;justify-content:space-between;
+ align-items:center
+}
+.numbers{color:#d5c4ff;font-weight:bold}
+small{color:#aab4ce}
+</style>
+</head>
+<body>
+
+<header>
+<h1>✦ LOTTIVA</h1>
+<p>Korean Lotto 6/45 Analyzer</p>
+<small>Our Number Research Project</small>
+</header>
+
+<div class="card">
+<h3>📥 Add Source Lines</h3>
+<p><small>प्रत्येक लाइनमा 3 वटा नम्बर राख्नुहोस्।</small></p>
+<textarea id="source"
+placeholder="1 3 4&#10;2 5 8&#10;9 15 27"></textarea>
+<button onclick="addLines()">+ Add Lines</button>
+<button class="secondary" onclick="clearInput()">Clear Input</button>
+<p id="message"></p>
+</div>
+
+<div class="card">
+<h3>📊 Source History</h3>
+<h2 id="count">0 Lines</h2>
+<div id="history"></div>
+<button class="secondary" onclick="exportData()">Export Backup</button>
+<button class="secondary" onclick="deleteAll()">Delete All</button>
+</div>
+
+<script>
+let lines=JSON.parse(localStorage.getItem("lottiva_lines")||"[]");
+
+function save(){
+ localStorage.setItem("lottiva_lines",JSON.stringify(lines));
+ render();
+}
+
+function addLines(){
+ let input=document.getElementById("source").value.trim();
+ let rows=input.split(/\n/);
+ let added=0,errors=0;
+
+ rows.forEach(row=>{
+  if(!row.trim())return;
+  let nums=row.match(/\d+/g);
+  if(!nums||nums.length!==3){
+   errors++;return;
+  }
+  nums=nums.map(Number);
+  if(nums.some(n=>n<1||n>45)||new Set(nums).size!==3){
+   errors++;return;
+  }
+  lines.push(nums);
+  added++;
+ });
+
+ save();
+ document.getElementById("source").value="";
+ document.getElementById("message").innerText=
+ added+" Lines Added | "+errors+" Invalid Lines";
+}
+
+function render(){
+ document.getElementById("count").innerText=
+ lines.length+" Lines";
+
+ let html="";
+ lines.forEach((nums,i)=>{
+  html+=`<div class="line">
+  <span>L${i+1}</span>
+  <span class="numbers">${nums.join(" - ")}</span>
+  <button class="secondary" onclick="removeLine(${i})">×</button>
+  </div>`;
+ });
+ document.getElementById("history").innerHTML=
+ html||"<small>No Source Lines Yet</small>";
+}
+
+function removeLine(i){
+ if(confirm("Delete this line?")){
+  lines.splice(i,1);
+  save();
+ }
+}
+
+function clearInput(){
+ document.getElementById("source").value="";
+}
+
+function deleteAll(){
+ if(confirm("Delete ALL Source Lines?")){
+  lines=[];
+  save();
+ }
+}
+
+function exportData(){
+ let data=lines.map(x=>x.join(" - ")).join("\n");
+ let blob=new Blob([data],{type:"text/plain"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="Lottiva_Backup.txt";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+render();
+</script>
+</body>
+</html>
+
+
+On Sun, 15 Nov 2026, 8:30 pm Shyamkumar Bk, <bkshyamkumar7@gmail.com> wrote:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lottiva</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101426;color:white;
+ font-family:Arial,sans-serif;padding:18px
+}
+header{text-align:center;padding:20px}
+h1{color:#b9a0ff;font-size:34px;margin:5px}
+.card{
+ background:#1c2540;padding:18px;
+ border-radius:15px;margin:15px 0
+}
+textarea{
+ width:100%;height:130px;padding:12px;
+ border-radius:9px;background:#101426;
+ color:white;border:1px solid #66708c;
+ font-size:17px
+}
+button{
+ padding:12px;border:0;border-radius:9px;
+ background:#8565e8;color:white;
+ font-size:15px;font-weight:bold;margin:5px 2px
+}
+.secondary{background:#35415e}
+.line{
+ padding:12px;margin:7px 0;
+ background:#293452;border-radius:9px;
+ display:flex;justify-content:space-between;
+ align-items:center
+}
+.numbers{color:#d5c4ff;font-weight:bold}
+small{color:#aab4ce}
+</style>
+</head>
+<body>
+
+<header>
+<h1>✦ LOTTIVA</h1>
+<p>Korean Lotto 6/45 Analyzer</p>
+<small>Our Number Research Project</small>
+</header>
+
+<div class="card">
+<h3>📥 Add Source Lines</h3>
+<p><small>प्रत्येक लाइनमा 3 वटा नम्बर राख्नुहोस्।</small></p>
+<textarea id="source"
+placeholder="1 3 4&#10;2 5 8&#10;9 15 27"></textarea>
+<button onclick="addLines()">+ Add Lines</button>
+<button class="secondary" onclick="clearInput()">Clear Input</button>
+<p id="message"></p>
+</div>
+
+<div class="card">
+<h3>📊 Source History</h3>
+<h2 id="count">0 Lines</h2>
+<div id="history"></div>
+<button class="secondary" onclick="exportData()">Export Backup</button>
+<button class="secondary" onclick="deleteAll()">Delete All</button>
+</div>
+
+<script>
+let lines=JSON.parse(localStorage.getItem("lottiva_lines")||"[]");
+
+function save(){
+ localStorage.setItem("lottiva_lines",JSON.stringify(lines));
+ render();
+}
+
+function addLines(){
+ let input=document.getElementById("source").value.trim();
+ let rows=input.split(/\n/);
+ let added=0,errors=0;
+
+ rows.forEach(row=>{
+  if(!row.trim())return;
+  let nums=row.match(/\d+/g);
+  if(!nums||nums.length!==3){
+   errors++;return;
+  }
+  nums=nums.map(Number);
+  if(nums.some(n=>n<1||n>45)||new Set(nums).size!==3){
+   errors++;return;
+  }
+  lines.push(nums);
+  added++;
+ });
+
+ save();
+ document.getElementById("source").value="";
+ document.getElementById("message").innerText=
+ added+" Lines Added | "+errors+" Invalid Lines";
+}
+
+function render(){
+ document.getElementById("count").innerText=
+ lines.length+" Lines";
+
+ let html="";
+ lines.forEach((nums,i)=>{
+  html+=`<div class="line">
+  <span>L${i+1}</span>
+  <span class="numbers">${nums.join(" - ")}</span>
+  <button class="secondary" onclick="removeLine(${i})">×</button>
+  </div>`;
+ });
+ document.getElementById("history").innerHTML=
+ html||"<small>No Source Lines Yet</small>";
+}
+
+function removeLine(i){
+ if(confirm("Delete this line?")){
+  lines.splice(i,1);
+  save();
+ }
+}
+
+function clearInput(){
+ document.getElementById("source").value="";
+}
+
+function deleteAll(){
+ if(confirm("Delete ALL Source Lines?")){
+  lines=[];
+  save();
+ }
+}
+
+function exportData(){
+ let data=lines.map(x=>x.join(" - ")).join("\n");
+ let blob=new Blob([data],{type:"text/plain"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="Lottiva_Backup.txt";
+ a.click();
+ URL.revokeObjectURL(a.href);
+}
+
+render();
+</script>
+</body>
+</html>
+
+
+On Sat, 14 Nov 2026, 11:25 pm Shyamkumar Bk, <bkshyamkumar7@gmail.com> wrote:
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lottiva</title>
+<style>
+body {
+  margin: 0;
+  background: #071426;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+}
+header {
+  padding: 35px 15px;
+  color: #42a5ff;
+  font-size: 32px;
+  font-weight: bold;
+}
+p { color: #c6d4e5; }
+.panel {
+  margin: 20px;
+  padding: 25px;
+  background: #102541;
+  border: 1px solid #d5a83b;
+  border-radius: 18px;
+}
+.ball {
+  display: inline-flex;
+  width: 38px;
+  height: 38px;
+  margin: 5px;
+  border-radius: 50%;
+  background: #d5a83b;
+  color: #071426;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+button {
+  padding: 13px 25px;
+  background: #1677df;
+  color: white;
+  border: 0;
+  border-radius: 10px;
+  font-size: 16px;
+}
+</style>
+</head>
+<body>
+<header>LOTTIVA</header>
+<p>Think Smart • Win Smart</p>
+<div class="panel">
+<h2>Korean Lotto 6/45</h2>
+<div>
+<span class="ball">01</span>
+<span class="ball">13</span>
+<span class="ball">18</span>
+<span class="ball">27</span>
+<span class="ball">34</span>
+<span class="ball">42</span>
+</div>
+<p>Your Smart Lotto Analyzer</p>
 <button onclick="alert('Lottiva is starting!')">
 Get Started
 </button>
 </div>
 <p>Offline • Smart Analysis • Source Evidence</p>
+</body>
+</html>
+
+
+On Sat, 14 Nov 2026, 11:25 pm Sunita Bk, <bksunita5678@gmail.com> wrote:
+👋 
+
+On Sat, 14 Nov 2026, 11:24 pm Shyamkumar Bk, <bkshyamkumar7@gmail.com> wrote:
+
 </body>
 </html>
 
