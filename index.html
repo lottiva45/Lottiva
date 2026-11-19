@@ -63,6 +63,13 @@ small{color:#aab4ce}
 <div id="triples"></div>
 </div>
 
+<div class="card">
+<h3>🔎 2-Line 4+2 Analysis</h3>
+<p><small>दुई लाइनबाट ४ नम्बर र बाँकी लाइनबाट २ नम्बर खोज्नुहोस्।</small></p>
+<button onclick="analyzeTwoLineFourPlusTwo()">Find 4+2 Sets</button>
+<div id="fourPlusTwo"></div>
+</div>
+
 <script>
 let lines=JSON.parse(localStorage.getItem("lottiva_lines")||"[]");
 let selected={};
@@ -180,6 +187,94 @@ function analyzeTriples(){
 }
 
 render();
+ 
+function analyzeTwoLineFourPlusTwo(){
+  const out=document.getElementById("fourPlusTwo");
+  if(lines.length<4){
+    out.innerHTML="कम्तीमा ४ वटा Source Line चाहिन्छ।";
+    return;
+  }
+
+  let results=[];
+
+  for(let i=0;i<lines.length;i++){
+    for(let j=i+1;j<lines.length;j++){
+
+      let common=lines[i].filter(n=>lines[j].includes(n));
+      if(common.length!==2) continue;
+
+      let base=[...new Set([...lines[i],...lines[j]])].sort((a,b)=>a-b);
+      if(base.length!==4) continue;
+
+      for(let n5=1;n5<=45;n5++){
+        if(base.includes(n5)) continue;
+
+        for(let n6=n5+1;n6<=45;n6++){
+          if(base.includes(n6)) continue;
+
+          let six=[...base,n5,n6];
+          let sixSet=new Set(six);
+          let pairMap={};
+          let invalid=false;
+
+          lines.forEach((line,k)=>{
+            if(k===i || k===j) return;
+
+            let found=line.filter(n=>sixSet.has(n));
+
+            if(found.length>=3){
+              invalid=true;
+              return;
+            }
+
+            if(found.length===2){
+              let key=found.sort((a,b)=>a-b).join("-");
+              if(!pairMap[key]) pairMap[key]=[];
+              pairMap[key].push(k+1);
+            }
+          });
+
+          if(invalid) continue;
+
+          let hasN5=base.some(n=>pairMap[[n,n5].sort((a,b)=>a-b).join("-")]);
+          let hasN6=base.some(n=>pairMap[[n,n6].sort((a,b)=>a-b).join("-")]);
+
+          if(!hasN5 || !hasN6) continue;
+
+          let pairs=Object.entries(pairMap);
+          if(!pairs.length) continue;
+
+          results.push({
+            nums:six,
+            baseLines:[i+1,j+1],
+            pairs:pairs
+          });
+        }
+      }
+    }
+  }
+
+  if(!results.length){
+    out.innerHTML="<small>मान्य 4+2 Set भेटिएन।</small>";
+    return;
+  }
+
+  out.innerHTML=results.map((r,index)=>`
+    <div class="result">
+      <b>Set ${index+1}: ${r.nums.join(" - ")}</b><br>
+      <small>Base Source Lines: L${r.baseLines.join(", L")}</small>
+      <hr>
+      ${r.pairs.map(([pair,src])=>`
+        <div>
+          <b>${pair.replace("-"," – ")}</b>
+          <small> | ${src.length} पटक | Lines: ${src.map(x=>"L"+x).join(", ")}</small>
+        </div>
+      `).join("")}
+      <small>जम्मा भेटिएका Pair: ${r.pairs.length}</small>
+    </div>
+  `).join("");
+}
+
 </script>
 </body>
 </html>
